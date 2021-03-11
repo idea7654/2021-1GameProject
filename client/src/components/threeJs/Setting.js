@@ -30,6 +30,7 @@ const Setting = () => {
     const color = 0xffffff;
     const intensity = 2;
     let user = null;
+    let walls = [];
 
     let key = {
       r_left: 0,
@@ -61,11 +62,6 @@ const Setting = () => {
     }
 
     function load() {
-      //   const geometry = new THREE.BoxGeometry(1, 1, 1);
-      //   const material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
-      //   const mesh = new THREE.Mesh(geometry, material);
-      //   mesh.position.set(0, 0.5, 0);
-      //   scene.add(mesh);
       user = new Player();
       user.draw();
       const gridHelper = new THREE.GridHelper(50, 10);
@@ -122,11 +118,51 @@ const Setting = () => {
 
       user.update();
       controlMove();
+      walls.forEach((data) => {
+        data.collision();
+      });
 
       renderer.render(scene, camera);
     }
 
     function makeWall(x, z, vector) {
+      this.x = x;
+      this.z = z;
+      this.vector = vector;
+
+      this.collision = function () {
+        const { position } = user.sphere;
+
+        if (
+          this.vector.x - this.x / 2 < position.x - user.radius &&
+          this.vector.x + this.x / 2 > position.x + user.radius
+        ) {
+          if (this.vector.z > position.z + user.radius) {
+            if (this.vector.z - this.z / 2 < position.z + user.radius) {
+              position.z = this.vector.z - this.z / 2 - user.radius;
+            } //오른쪽 벽
+          } else {
+            if (position.z - user.radius < this.vector.z + this.z / 2) {
+              position.z = this.vector.z + this.z / 2 + user.radius;
+            } //왼쪽 벽
+          }
+        }
+
+        if (
+          this.vector.z + this.z / 2 > position.z + user.radius &&
+          this.vector.z - this.z / 2 < position.z - user.radius
+        ) {
+          if (this.vector.x > position.x + user.radius) {
+            if (this.vector.x - this.x / 2 < position.x + user.radius) {
+              position.x = this.vector.x - this.x / 2 - user.radius;
+            }
+          } else {
+            if (this.vector.x + this.x / 2 > position.x - user.radius) {
+              position.x = this.vector.x + this.x / 2 + user.radius;
+            }
+          }
+        }
+      };
       const wallGeometry = new THREE.BoxGeometry(x, 10, z);
       const material = new THREE.MeshBasicMaterial({ color: 0x000000 });
       const mesh = new THREE.Mesh(wallGeometry, material);
@@ -135,9 +171,10 @@ const Setting = () => {
     }
 
     function initMap() {
-      makeWall(50, 1, { x: 0, z: 25 });
-      makeWall(1, 50, { x: -25, z: 0 });
-      makeWall(1, 45, { x: 25, z: -2.5 });
+      const a = new makeWall(50, 1, { x: 0, z: 25 });
+      const b = new makeWall(1, 50, { x: -25, z: 0 });
+      const c = new makeWall(1, 45, { x: 25, z: -2.5 });
+      walls.push(a, b, c);
     }
     //-25, 25 ~ 25, -25?
     function Player() {
