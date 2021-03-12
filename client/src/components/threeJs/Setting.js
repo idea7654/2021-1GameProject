@@ -134,8 +134,8 @@ const Setting = () => {
         const { position } = user.sphere;
 
         if (
-          this.vector.x - this.x / 2 < position.x - user.radius &&
-          this.vector.x + this.x / 2 > position.x + user.radius
+          this.vector.x - this.x / 2 < position.x && //- user.radius
+          this.vector.x + this.x / 2 > position.x //+ user.radius
         ) {
           if (this.vector.z > position.z + user.radius) {
             if (this.vector.z - this.z / 2 < position.z + user.radius) {
@@ -149,8 +149,8 @@ const Setting = () => {
         }
 
         if (
-          this.vector.z + this.z / 2 > position.z + user.radius &&
-          this.vector.z - this.z / 2 < position.z - user.radius
+          this.vector.z + this.z / 2 > position.z && //+ user.radius
+          this.vector.z - this.z / 2 < position.z // - user.radius
         ) {
           if (this.vector.x > position.x + user.radius) {
             if (this.vector.x - this.x / 2 < position.x + user.radius) {
@@ -174,12 +174,15 @@ const Setting = () => {
       const a = new makeWall(50, 1, { x: 0, z: 25 });
       const b = new makeWall(1, 50, { x: -25, z: 0 });
       const c = new makeWall(1, 45, { x: 25, z: -2.5 });
-      walls.push(a, b, c);
+      const d = new makeWall(45, 1, { x: -2.5, z: -25 });
+      const e = new makeWall(20, 1, { x: 10, z: 20 });
+      const f = new makeWall(1, 40, { x: -5, z: 0 });
+      const g = new makeWall(45, 1, { x: -2.5, z: 15 });
+      walls.push(a, b, c, d, e, f, g);
     }
     //-25, 25 ~ 25, -25?
     function Player() {
       this.sphere = null;
-      //this.y = 0.5;
       this.xSpeed = 0;
       this.zSpeed = 0;
       this.radius = 1;
@@ -187,7 +190,7 @@ const Setting = () => {
         const geometry = new THREE.SphereGeometry(this.radius, 32, 32);
         const material = new THREE.MeshBasicMaterial({ color: "#3903fc" });
         this.sphere = new THREE.Mesh(geometry, material);
-        this.sphere.position.set(0, this.radius, 0);
+        this.sphere.position.set(22.5, this.radius, 22.5);
         scene.add(this.sphere);
       };
 
