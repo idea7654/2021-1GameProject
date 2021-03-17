@@ -14,7 +14,8 @@ const Setting = () => {
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
     });
-    scene.background = new THREE.Color("#FFFFFF"); //배경색 지정
+    //scene.background = new THREE.Color("#FFFFFF"); //배경색 지정
+    scene.background = new THREE.Color("#000000");
     renderer.setSize(window.innerWidth, window.innerHeight);
     ref.current.appendChild(renderer.domElement);
 
@@ -39,27 +40,9 @@ const Setting = () => {
       r_down: 0,
     };
 
-    {
-      const light = new THREE.DirectionalLight(color, intensity);
-      light.position.set(1, 1, 1);
-      scene.add(light);
-
-      const light2 = new THREE.DirectionalLight(color, intensity);
-      light2.position.set(-1, -1, -1);
-      scene.add(light2);
-
-      const light3 = new THREE.DirectionalLight(color, intensity);
-      light3.position.set(20, 0, 0);
-      scene.add(light3);
-
-      const light4 = new THREE.DirectionalLight(color, intensity);
-      light4.position.set(0, 20, 0);
-      scene.add(light4);
-
-      const light5 = new THREE.DirectionalLight(color, intensity);
-      light5.position.set(0, 0, 20);
-      scene.add(light5);
-    }
+    const pointLight = new THREE.DirectionalLight(0xffffff, 3);
+    //camera.add(pointLight);
+    //scene.add(camera);
 
     function load() {
       user = new Player();
@@ -164,7 +147,7 @@ const Setting = () => {
         }
       };
       const wallGeometry = new THREE.BoxGeometry(x, 10, z);
-      const material = new THREE.MeshBasicMaterial({ color: 0x000000 });
+      const material = new THREE.MeshPhongMaterial({ color: 0x000000 });
       const mesh = new THREE.Mesh(wallGeometry, material);
       mesh.position.set(vector.x, 5, vector.z);
       scene.add(mesh);
@@ -191,6 +174,12 @@ const Setting = () => {
         const material = new THREE.MeshBasicMaterial({ color: "#3903fc" });
         this.sphere = new THREE.Mesh(geometry, material);
         this.sphere.position.set(22.5, this.radius, 22.5);
+        pointLight.position.set(
+          this.sphere.position.x,
+          this.sphere.position.y,
+          this.sphere.position.z
+        );
+        this.sphere.add(pointLight);
         scene.add(this.sphere);
       };
 
