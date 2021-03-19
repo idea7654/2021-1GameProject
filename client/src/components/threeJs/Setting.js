@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import io from "socket.io-client";
 const Setting = () => {
   const ref = useRef();
+  const socket = io.connect("http://localhost:5000");
   useEffect(() => {
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(
@@ -228,6 +230,8 @@ const Setting = () => {
     document.onkeyup = up_key;
 
     load();
+
+    socket.emit("hello", "hello");
     //animate();
   }, []);
   return <div ref={ref}></div>;
