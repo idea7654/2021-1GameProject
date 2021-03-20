@@ -3,6 +3,7 @@ const app = express();
 const socket = require("socket.io");
 
 const server = app.listen(5000);
+let players = [];
 
 const io = require("socket.io")(server, {
   cors: {
@@ -11,7 +12,8 @@ const io = require("socket.io")(server, {
 });
 
 io.on("connection", (socket) => {
-  socket.on("hello", (data) => {
-    console.log(data);
+  socket.emit("requestPlayerData");
+  socket.on("getPlayerData", (data) => {
+    players.push(data);
   });
 });

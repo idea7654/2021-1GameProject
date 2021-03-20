@@ -107,6 +107,8 @@ const Setting = () => {
         data.collision();
       });
 
+      socket.emit();
+
       renderer.render(scene, camera);
     }
 
@@ -183,7 +185,7 @@ const Setting = () => {
         );
         this.sphere.add(pointLight);
         scene.add(this.sphere);
-      };
+      }; //this.radius, this.sphere.position
 
       this.update = function () {
         this.sphere.position.x += this.xSpeed;
@@ -231,7 +233,14 @@ const Setting = () => {
 
     load();
 
-    socket.emit("hello", "hello");
+    socket.on("requestPlayerData", (data) => {
+      socket.emit("getPlayerData", {
+        id: socket.id,
+        x: user.sphere.position.x,
+        z: user.sphere.position.z,
+      });
+    });
+
     //animate();
   }, []);
   return <div ref={ref}></div>;
