@@ -34,6 +34,7 @@ const Setting = () => {
     const intensity = 2;
     let user = null;
     let walls = [];
+    let players = [];
 
     let key = {
       r_left: 0,
@@ -101,13 +102,12 @@ const Setting = () => {
       }
       requestAnimationFrame(animate);
 
+      //sendPlayerData();
       user.update();
       controlMove();
       walls.forEach((data) => {
         data.collision();
       });
-
-      socket.emit();
 
       renderer.render(scene, camera);
     }
@@ -169,6 +169,7 @@ const Setting = () => {
     }
     //-25, 25 ~ 25, -25?
     function Player() {
+      this.id = null;
       this.sphere = null;
       this.xSpeed = 0;
       this.zSpeed = 0;
@@ -197,6 +198,8 @@ const Setting = () => {
         this.zSpeed = z / 5;
       };
     }
+
+    function draw_players() {}
 
     function set_key() {
       if (event.keyCode === 37) {
@@ -233,14 +236,26 @@ const Setting = () => {
 
     load();
 
+    // function sendPlayerData() {
+    //   socket.emit("sendPlayerData", {
+    //     id: socket.id,
+    //     x: user.sphere.position.x,
+    //     z: user.sphere.position.z,
+    //   });
+    // }
+
     socket.on("requestPlayerData", (data) => {
       socket.emit("getPlayerData", {
         id: socket.id,
         x: user.sphere.position.x,
         z: user.sphere.position.z,
       });
+      user.id = socket.id;
     });
 
+    socket.on("sendPlayersData", (data) => {
+      console.log(data);
+    });
     //animate();
   }, []);
   return <div ref={ref}></div>;

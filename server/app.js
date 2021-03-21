@@ -13,7 +13,8 @@ const io = require("socket.io")(server, {
 
 io.on("connection", (socket) => {
   socket.emit("requestPlayerData");
-  socket.on("getPlayerData", (data) => {
-    players.push(data);
+  socket.on("getPlayerData", async (data) => {
+    await players.push(data);
+    await socket.emit("sendPlayersData", players);
   });
 });
