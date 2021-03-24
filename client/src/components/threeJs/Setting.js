@@ -16,8 +16,8 @@ const Setting = () => {
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
     });
-    //scene.background = new THREE.Color("#FFFFFF"); //배경색 지정
-    scene.background = new THREE.Color("#000000");
+    scene.background = new THREE.Color("#FFFFFF"); //배경색 지정
+    //scene.background = new THREE.Color("#000000");
     renderer.setSize(window.innerWidth, window.innerHeight);
     ref.current.appendChild(renderer.domElement);
 
@@ -49,13 +49,11 @@ const Setting = () => {
 
     function load() {
       user = new Player();
-      user.draw();
+      //user.draw();
       const gridHelper = new THREE.GridHelper(50, 10);
       scene.add(gridHelper);
 
       initMap();
-
-      animate();
     }
 
     function resizeRendererToDisplaySize(renderer) {
@@ -118,19 +116,24 @@ const Setting = () => {
       this.vector = vector;
 
       this.collision = function () {
-        const { position } = user.sphere;
-
+        // const { position } = user.sphere;
+        const index = players.findIndex((i) => i.id === user.id);
+        const { position } = players[index].sphere;
         if (
           this.vector.x - this.x / 2 < position.x && //- user.radius
           this.vector.x + this.x / 2 > position.x //+ user.radius
         ) {
           if (this.vector.z > position.z + user.radius) {
             if (this.vector.z - this.z / 2 < position.z + user.radius) {
-              position.z = this.vector.z - this.z / 2 - user.radius;
+              //position.z = this.vector.z - this.z / 2 - user.radius;
+              this.xSpeed = 0;
+              this.zSpeed = 0;
             } //오른쪽 벽
           } else {
             if (position.z - user.radius < this.vector.z + this.z / 2) {
-              position.z = this.vector.z + this.z / 2 + user.radius;
+              //position.z = this.vector.z + this.z / 2 + user.radius;
+              this.xSpeed = 0;
+              this.zSpeed = 0;
             } //왼쪽 벽
           }
         }
@@ -141,11 +144,15 @@ const Setting = () => {
         ) {
           if (this.vector.x > position.x + user.radius) {
             if (this.vector.x - this.x / 2 < position.x + user.radius) {
-              position.x = this.vector.x - this.x / 2 - user.radius;
+              //position.x = this.vector.x - this.x / 2 - user.radius;
+              this.xSpeed = 0;
+              this.zSpeed = 0;
             }
           } else {
             if (this.vector.x + this.x / 2 > position.x - user.radius) {
-              position.x = this.vector.x + this.x / 2 + user.radius;
+              //position.x = this.vector.x + this.x / 2 + user.radius;
+              this.xSpeed = 0;
+              this.zSpeed = 0;
             }
           }
         }
@@ -168,29 +175,42 @@ const Setting = () => {
       walls.push(a, b, c, d, e, f, g);
     }
     //-25, 25 ~ 25, -25?
+
+    // function collisionFunc(){
+    //   socket.
+    // }
     function Player() {
       this.id = null;
       this.sphere = null;
       this.xSpeed = 0;
       this.zSpeed = 0;
       this.radius = 1;
-      this.draw = function () {
-        const geometry = new THREE.SphereGeometry(this.radius, 32, 32);
-        const material = new THREE.MeshBasicMaterial({ color: "#3903fc" });
-        this.sphere = new THREE.Mesh(geometry, material);
-        this.sphere.position.set(22.5, this.radius, 22.5);
-        pointLight.position.set(
-          this.sphere.position.x,
-          this.sphere.position.y,
-          this.sphere.position.z
-        );
-        this.sphere.add(pointLight);
-        scene.add(this.sphere);
-      }; //this.radius, this.sphere.position
+      this.x = 22.5;
+      this.z = 22.5;
+      // this.draw = function () {
+      //   const geometry = new THREE.SphereGeometry(this.radius, 32, 32);
+      //   const material = new THREE.MeshBasicMaterial({ color: "#3903fc" });
+      //   this.sphere = new THREE.Mesh(geometry, material);
+      //   this.sphere.position.set(22.5, this.radius, 22.5);
+      //   pointLight.position.set(
+      //     this.sphere.position.x,
+      //     this.sphere.position.y,
+      //     this.sphere.position.z
+      //   );
+      //   this.sphere.add(pointLight);
+      //   //scene.add(this.sphere);
+      // }; //this.radius, this.sphere.position
 
       this.update = function () {
-        this.sphere.position.x += this.xSpeed;
-        this.sphere.position.z += this.zSpeed;
+        //this.sphere.position.x += this.xSpeed;
+        //this.sphere.position.z += this.zSpeed;
+        this.x += this.xSpeed;
+        this.z += this.zSpeed;
+        socket.emit("playerMove", {
+          id: this.id,
+          x: this.x,
+          z: this.z,
+        });
       };
 
       this.dir = function (x, z) {
@@ -199,7 +219,27 @@ const Setting = () => {
       };
     }
 
-    function draw_players() {}
+    function move_players(id, x, z) {
+      players.forEach((data) => {
+        if (data.id === id) {
+          data.sphere.position.x = x;
+          data.sphere.position.z = z;
+        }
+      });
+    }
+
+    function draw_players() {
+      players.forEach((data, index) => {
+        const geometry = new THREE.SphereGeometry(data.radius, 32, 32);
+        const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+        const sphere = new THREE.Mesh(geometry, material);
+        sphere.position.set(data.x, 1, data.z);
+
+        scene.add(sphere);
+
+        players.splice(index, 1, { ...data, sphere });
+      });
+    }
 
     function set_key() {
       if (event.keyCode === 37) {
@@ -247,14 +287,24 @@ const Setting = () => {
     socket.on("requestPlayerData", (data) => {
       socket.emit("getPlayerData", {
         id: socket.id,
-        x: user.sphere.position.x,
-        z: user.sphere.position.z,
+        //x: user.sphere.position.x,
+        //z: user.sphere.position.z,
+        x: user.x,
+        z: user.z,
       });
       user.id = socket.id;
     });
 
     socket.on("sendPlayersData", (data) => {
-      console.log(data);
+      players = data;
+      draw_players();
+      animate();
+    });
+
+    socket.on("playerMove", (data) => {
+      // const playerIndex = players.findIndex((i) => i.id === data.id);
+      // players.splice(playerIndex, 1, data);
+      move_players(data.id, data.x, data.z);
     });
     //animate();
   }, []);

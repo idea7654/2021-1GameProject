@@ -17,4 +17,18 @@ io.on("connection", (socket) => {
     await players.push(data);
     await socket.emit("sendPlayersData", players);
   });
+
+  socket.on("playerMove", (data) => {
+    io.emit("playerMove", data);
+    console.log(players);
+  });
+
+  socket.on("disconnect", () => {
+    players.forEach((element) => {
+      if (element.id === socket.id) {
+        const index = players.indexOf(element);
+        players.splice(index, 1);
+      }
+    });
+  });
 });
