@@ -12,15 +12,22 @@ const io = require("socket.io")(server, {
 });
 
 io.on("connection", (socket) => {
-  socket.emit("requestPlayerData");
-  socket.on("getPlayerData", async (data) => {
-    await players.push(data);
-    await socket.emit("sendPlayersData", players);
-  });
+  // socket.emit("requestPlayerData");
+  // socket.on("getPlayerData", async (data) => {
+  //   await players.push(data);
+  //   await socket.emit("sendPlayersData", players);
+  // });
 
   socket.on("playerMove", (data) => {
     io.emit("playerMove", data);
-    console.log(players);
+  });
+
+  socket.on("sendPlayerData", async (data) => {
+    await players.push({ ...data, id: socket.id });
+    await io.emit("getOtherPlayer", {
+      players: players,
+      socketId: socket.id,
+    });
   });
 
   socket.on("disconnect", () => {
