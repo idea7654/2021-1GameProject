@@ -16,20 +16,20 @@ const Setting = () => {
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
     });
-    scene.background = new THREE.Color("#FFFFFF"); //배경색 지정
-    //scene.background = new THREE.Color("#000000");
+    // scene.background = new THREE.Color("#FFFFFF"); //배경색 지정
+    scene.background = new THREE.Color("#000000");
     renderer.setSize(window.innerWidth, window.innerHeight);
     ref.current.appendChild(renderer.domElement);
 
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableKeys = false;
-    //controls.enableZoom = false;
-    controls.rotateSpeed = 0.3;
-    camera.position.x = 10;
-    camera.position.y = 10;
-    camera.position.z = 0;
-    controls.update();
-
+    // const controls = new OrbitControls(camera, renderer.domElement);
+    // controls.enableKeys = false;
+    // controls.rotateSpeed = 0.3;
+    // camera.position.x = 5;
+    // camera.position.y = 3;
+    // camera.position.z = 0;
+    // camera.rotation.set(-1, 1.35, 1);
+    // controls.update();
+    // camera.rotation.set(0, Math.PI, 0);
     const color = 0xffffff;
     const intensity = 2;
     let user = null;
@@ -71,31 +71,6 @@ const Setting = () => {
       return needResize;
     }
 
-    function controlMove() {
-      if (key.r_left && key.r_up) {
-        user.dir(-1, 1);
-      } else if (key.r_left && key.r_down) {
-        user.dir(1, 1);
-      } else if (key.r_right && key.r_up) {
-        user.dir(-1, -1);
-      } else if (key.r_right && key.r_down) {
-        user.dir(1, -1);
-      } else {
-        if (key.r_left) {
-          user.dir(0, 1);
-        }
-        if (key.r_right) {
-          user.dir(0, -1);
-        }
-        if (key.r_up) {
-          user.dir(-1, 0);
-        }
-        if (key.r_down) {
-          user.dir(1, 0);
-        }
-      }
-    }
-
     function animate() {
       if (resizeRendererToDisplaySize(renderer)) {
         const canvas = renderer.domElement;
@@ -103,10 +78,7 @@ const Setting = () => {
         camera.updateProjectionMatrix();
       }
       requestAnimationFrame(animate);
-
       user.update();
-
-      controlMove();
       walls.forEach((data) => {
         data.collision();
       });
@@ -180,6 +152,7 @@ const Setting = () => {
       this.xSpeed = 0;
       this.zSpeed = 0;
       this.radius = 1;
+      this.degree = 0;
       this.draw = function () {
         const geometry = new THREE.SphereGeometry(this.radius, 32, 32);
         const material = new THREE.MeshBasicMaterial({ color: "#3903fc" });
@@ -190,36 +163,36 @@ const Setting = () => {
           this.sphere.position.y,
           this.sphere.position.z
         );
+        camera.rotation.y = Math.PI / 2;
         this.sphere.add(pointLight);
+        this.sphere.add(camera);
         scene.add(this.sphere);
       }; //this.radius, this.sphere.position
 
       this.update = function () {
-        this.sphere.position.x += this.xSpeed;
-        this.sphere.position.z += this.zSpeed;
-        // this.x += this.xSpeed;
-        // this.z += this.zSpeed;
+        if (key.r_right) {
+          this.degree += (2 / 180) * Math.PI;
+          this.sphere.rotation.y -= (4 * Math.PI) / 360;
+        }
+        if (key.r_left) {
+          this.degree -= (2 / 180) * Math.PI;
+          this.sphere.rotation.y += (4 * Math.PI) / 360;
+        }
+        if (key.r_up) {
+          this.sphere.position.x -= 0.1 * Math.cos(this.degree);
+          this.sphere.position.z -= 0.1 * Math.sin(this.degree);
+        }
+        if (key.r_down) {
+          this.sphere.position.x += 0.1 * Math.cos(this.degree);
+          this.sphere.position.z += 0.1 * Math.sin(this.degree);
+        }
         socket.emit("playerMove", {
           id: socket.id,
           x: this.sphere.position.x,
           z: this.sphere.position.z,
         });
       };
-
-      this.dir = function (x, z) {
-        this.xSpeed = x / 5;
-        this.zSpeed = z / 5;
-      };
     }
-
-    // function move_players(id, x, z) {
-    //   players.forEach((data) => {
-    //     if (data.id === id) {
-    //       data.sphere.position.x = x;
-    //       data.sphere.position.z = z;
-    //     }
-    //   });
-    // }
 
     async function draw_players() {
       const playerIndex = await players.findIndex((i) => i.id === socket.id);
@@ -234,7 +207,6 @@ const Setting = () => {
         sphere.name = data.id;
         scene.add(sphere);
       });
-      await console.log(players);
     }
 
     function set_key() {
