@@ -13,6 +13,12 @@ const Setting = () => {
       0.1,
       1000
     );
+    const cameraSecond = new THREE.PerspectiveCamera(
+      75,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      1000
+    );
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
     });
@@ -30,12 +36,12 @@ const Setting = () => {
     // camera.rotation.set(-1, 1.35, 1);
     // controls.update();
     // camera.rotation.set(0, Math.PI, 0);
-    const color = 0xffffff;
-    const intensity = 2;
+    // const color = 0xffffff;
+    // const intensity = 2;
     let user = null;
     let walls = [];
     let players = [];
-    let collisionFlag = false;
+    // let collisionFlag = false;
 
     let key = {
       r_left: 0,
@@ -44,7 +50,7 @@ const Setting = () => {
       r_down: 0,
     };
 
-    const pointLight = new THREE.DirectionalLight(0xffffff, 3);
+    // const pointLight = new THREE.DirectionalLight(0xffffff, 3);
     //camera.add(pointLight);
     //scene.add(camera);
 
@@ -84,6 +90,44 @@ const Setting = () => {
       });
 
       renderer.render(scene, camera);
+
+      renderer.setViewport(
+        0,
+        0,
+        Math.floor(window.innerWidth / 2),
+        window.innerHeight
+      );
+      renderer.setScissor(
+        0,
+        0,
+        Math.floor(window.innerWidth / 2),
+        window.innerHeight
+      );
+      renderer.setScissorTest(true);
+      renderer.setClearColor(new THREE.Color(1, 1, 1));
+      camera.aspect = Math.floor(window.innerWidth / 2) / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.render(scene, camera);
+
+      const left = Math.floor(window.innerWidth / 2);
+      renderer.setViewport(
+        left,
+        0,
+        Math.floor(window.innerWidth / 2),
+        window.innerHeight
+      );
+      renderer.setScissor(
+        left,
+        0,
+        Math.floor(window.innerWidth / 2),
+        window.innerHeight
+      );
+      renderer.setScissorTest(true);
+      renderer.setClearColor(new THREE.Color(1, 1, 1));
+      cameraSecond.aspect =
+        Math.floor(window.innerWidth / 2) / window.innerHeight;
+      cameraSecond.updateProjectionMatrix();
+      renderer.render(scene, cameraSecond);
     }
 
     function makeWall(x, z, vector) {
@@ -153,18 +197,20 @@ const Setting = () => {
       this.zSpeed = 0;
       this.radius = 1;
       this.degree = 0;
+      this.camera = camera;
       this.draw = function () {
         const geometry = new THREE.SphereGeometry(this.radius, 32, 32);
         const material = new THREE.MeshBasicMaterial({ color: "#3903fc" });
         this.sphere = new THREE.Mesh(geometry, material);
         this.sphere.position.set(22.5, this.radius, 22.5);
-        pointLight.position.set(
-          this.sphere.position.x,
-          this.sphere.position.y,
-          this.sphere.position.z
-        );
+        const light = new THREE.SpotLight(0xffffff, 3);
+        light.position.set(this.sphere.position.x, 10, this.sphere.position.z);
+        light.angle = (90 * Math.PI) / 180;
+        light.distance = 100;
+        light.target = this.sphere;
+        this.sphere.add(light);
         camera.rotation.y = Math.PI / 2;
-        this.sphere.add(pointLight);
+        cameraSecond.rotation.y = Math.PI / 2;
         this.sphere.add(camera);
         scene.add(this.sphere);
       }; //this.radius, this.sphere.position
@@ -190,6 +236,7 @@ const Setting = () => {
           id: socket.id,
           x: this.sphere.position.x,
           z: this.sphere.position.z,
+          rotation: this.sphere.rotation,
         });
       };
     }
@@ -205,6 +252,7 @@ const Setting = () => {
         const sphere = new THREE.Mesh(geometry, material);
         sphere.position.set(data.x, 1, data.z);
         sphere.name = data.id;
+        sphere.add(cameraSecond);
         scene.add(sphere);
       });
     }
@@ -301,6 +349,7 @@ const Setting = () => {
       if (object) {
         object.position.x = data.x;
         object.position.z = data.z;
+        object.rotation.y = data.rotation._y;
       }
     });
     //animate();
