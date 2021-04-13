@@ -1,10 +1,11 @@
-import React, { useEffect, useRef } from "react";
+import React, { createRef, useEffect, useRef } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import io from "socket.io-client";
 const Setting = () => {
   const ref = useRef();
   const socket = io.connect("http://localhost:5000");
+  const canvasRef = useRef(null);
   useEffect(() => {
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(
@@ -41,6 +42,7 @@ const Setting = () => {
     let user = null;
     let walls = [];
     let players = [];
+    let exit = null;
     // let collisionFlag = false;
 
     let key = {
@@ -62,7 +64,7 @@ const Setting = () => {
       scene.add(gridHelper);
 
       initMap();
-
+      initNavi();
       animate();
     }
 
@@ -75,6 +77,14 @@ const Setting = () => {
         renderer.setSize(width, height, false);
       }
       return needResize;
+    }
+
+    function initNavi() {
+      const map = new THREE.TextureLoader().load("../../public/arrow.png");
+      const material2 = new THREE.SpriteMaterial({ map: map, color: 0xffffff });
+      const sprite = new THREE.Sprite(material2);
+      sprite.position.set(0, 1, -7);
+      user.sphere.add(sprite);
     }
 
     function animate() {
@@ -128,6 +138,16 @@ const Setting = () => {
         Math.floor(window.innerWidth / 2) / window.innerHeight;
       cameraSecond.updateProjectionMatrix();
       renderer.render(scene, cameraSecond);
+      if (exit && user) {
+        // console.log(exit.position, user.sphere.position);
+        const compassAngle =
+          (Math.atan2(
+            user.sphere.position.z - exit.position.z,
+            user.sphere.position.x - exit.position.x
+          ) *
+            180) /
+          Math.PI;
+      }
     }
 
     function makeWall(x, z, vector) {
@@ -184,6 +204,11 @@ const Setting = () => {
       const f = new makeWall(1, 40, { x: -5, z: 0 });
       const g = new makeWall(45, 1, { x: -2.5, z: 15 });
       walls.push(a, b, c, d, e, f, g);
+      const geometry = new THREE.SphereGeometry(1, 32, 32);
+      const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
+      exit = new THREE.Mesh(geometry, material);
+      exit.position.set(22.5, 10, -22.5);
+      scene.add(exit);
     }
     //-25, 25 ~ 25, -25?
 
@@ -354,7 +379,52 @@ const Setting = () => {
     });
     //animate();
   }, []);
-  return <div ref={ref}></div>;
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    const myImage = "../../public/arrow.png";
+    const img = new Image();
+    //drawCompass();
+    // setInterval(rotate, 1000);
+    // function rotate() {
+    //   ctx.save();
+    //   ctx.translate(0, 0);
+    //   ctx.rotate((45 * Math.PI) / 180);
+    //   drawCompass();
+    //   ctx.restore();
+    // }
+    drawCompass();
+    function drawCompass() {
+      img.onload = function () {
+        ctx.save();
+        ctx.translate(img.width / 2, img.height / 2);
+        ctx.rotate((45 * Math.PI) / 180);
+        ctx.drawImage(img, -img.width / 2, -img.height / 2);
+        ctx.restore();
+      };
+      img.src = myImage;
+    }
+  }, []);
+  return (
+    <div>
+      <div ref={ref}>
+        <canvas
+          ref={canvasRef}
+          style={{
+            position: "absolute",
+            width: "100",
+            height: "100",
+            backgroundColor: "white",
+          }}
+          width="100"
+          height="100"
+        >
+          아씨발ㅋㅋㅋ
+        </canvas>
+      </div>
+    </div>
+  );
 };
 
 export default Setting;
