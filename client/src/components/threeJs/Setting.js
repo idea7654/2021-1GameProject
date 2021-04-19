@@ -6,6 +6,7 @@ const Setting = () => {
   const ref = useRef();
   const socket = io.connect("http://localhost:5000");
   const canvasRef = useRef(null);
+  let compassAngle = 0;
   useEffect(() => {
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(
@@ -140,7 +141,7 @@ const Setting = () => {
       renderer.render(scene, cameraSecond);
       if (exit && user) {
         // console.log(exit.position, user.sphere.position);
-        const compassAngle =
+        compassAngle =
           (Math.atan2(
             user.sphere.position.z - exit.position.z,
             user.sphere.position.x - exit.position.x
@@ -385,21 +386,13 @@ const Setting = () => {
     const ctx = canvas.getContext("2d");
     const myImage = "../../public/arrow.png";
     const img = new Image();
-    //drawCompass();
-    // setInterval(rotate, 1000);
-    // function rotate() {
-    //   ctx.save();
-    //   ctx.translate(0, 0);
-    //   ctx.rotate((45 * Math.PI) / 180);
-    //   drawCompass();
-    //   ctx.restore();
-    // }
-    drawCompass();
+    setInterval(drawCompass, 1000);
     function drawCompass() {
       img.onload = function () {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.save();
         ctx.translate(img.width / 2, img.height / 2);
-        ctx.rotate((45 * Math.PI) / 180);
+        ctx.rotate(((compassAngle - 90) * Math.PI) / 180);
         ctx.drawImage(img, -img.width / 2, -img.height / 2);
         ctx.restore();
       };
@@ -419,9 +412,7 @@ const Setting = () => {
           }}
           width="100"
           height="100"
-        >
-          아씨발ㅋㅋㅋ
-        </canvas>
+        ></canvas>
       </div>
     </div>
   );
