@@ -43,6 +43,7 @@ const Setting = () => {
     let user = null;
     let walls = [];
     let players = [];
+    let obstacles = [];
     let exit = null;
     // let collisionFlag = false;
 
@@ -61,11 +62,18 @@ const Setting = () => {
       user = new Player();
       user.draw();
       sendPlayerData();
-      const gridHelper = new THREE.GridHelper(50, 10);
-      scene.add(gridHelper);
-
+      //const gridHelper = new THREE.GridHelper(50, 10);
+      //scene.add(gridHelper);
+      const floorMaterial = new THREE.MeshPhongMaterial({
+        color: 0x333333,
+      });
+      const floorGeometry = new THREE.BoxGeometry(51, 1, 51);
+      const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+      floor.position.set(0, -0.5, 0);
+      scene.add(floor);
       initMap();
       initNavi();
+      initObstacle();
       animate();
     }
 
@@ -97,6 +105,10 @@ const Setting = () => {
       requestAnimationFrame(animate);
       user.update();
       walls.forEach((data) => {
+        data.collision();
+      });
+      obstacles.forEach((data) => {
+        data.move();
         data.collision();
       });
 
@@ -147,7 +159,8 @@ const Setting = () => {
             user.sphere.position.x - exit.position.x
           ) *
             180) /
-          Math.PI;
+            Math.PI +
+          (user.sphere.rotation.y * 180) / Math.PI;
       }
     }
 
@@ -196,6 +209,70 @@ const Setting = () => {
       scene.add(mesh);
     }
 
+    function makeObstacle(x, y, z, vector, nickname) {
+      this.x = x;
+      this.y = y;
+      this.z = z;
+      this.vector = vector;
+      this.object = null;
+      this.direction = "+x";
+      this.collision = function () {
+        const { position } = user.sphere;
+        if (
+          this.vector.x - this.x / 2 < position.x && //- user.radius
+          this.vector.x + this.x / 2 > position.x //+ user.radius
+        ) {
+          if (this.vector.z > position.z + user.radius) {
+            if (this.vector.z - this.z / 2 < position.z + user.radius) {
+              position.z = this.vector.z - this.z / 2 - user.radius;
+            } //오른쪽 벽
+          } else {
+            if (position.z - user.radius < this.vector.z + this.z / 2) {
+              position.z = this.vector.z + this.z / 2 + user.radius;
+            } //왼쪽 벽
+          }
+        }
+        if (
+          this.vector.z + this.z / 2 > position.z && //+ user.radius
+          this.vector.z - this.z / 2 < position.z // - user.radius
+        ) {
+          if (this.vector.x > position.x + user.radius) {
+            if (this.vector.x - this.x / 2 < position.x + user.radius) {
+              position.x = this.vector.x - this.x / 2 - user.radius;
+            }
+          } else {
+            if (this.vector.x + this.x / 2 > position.x - user.radius) {
+              position.x = this.vector.x + this.x / 2 + user.radius;
+            }
+          }
+        }
+      };
+      this.move = function () {
+        if (this.direction == "+x") {
+          if (this.object.position.x < 21) {
+            this.object.position.x += 0.05;
+          }
+          if (this.object.position.x > 20) {
+            this.direction = "-x";
+          }
+        }
+        if (this.direction == "-x") {
+          if (this.object.position.x > 5) {
+            this.object.position.x -= 0.05;
+          }
+          if (this.object.position.x < 5.5) {
+            this.direction = "+x";
+          }
+        }
+      };
+      const wallGeometry = new THREE.BoxGeometry(x, y, z);
+      const material = new THREE.MeshPhongMaterial({ color: 0xffffff });
+      this.object = new THREE.Mesh(wallGeometry, material);
+      this.object.position.set(vector.x, y / 2, vector.z);
+      this.object.name = nickname;
+      scene.add(this.object);
+    }
+
     function initMap() {
       const a = new makeWall(50, 1, { x: 0, z: 25 });
       const b = new makeWall(1, 50, { x: -25, z: 0 });
@@ -210,6 +287,12 @@ const Setting = () => {
       exit = new THREE.Mesh(geometry, material);
       exit.position.set(22.5, 10, -22.5);
       scene.add(exit);
+    }
+
+    function initObstacle() {
+      const a = new makeObstacle(5, 5, 5, { x: 10, z: 5 }, "first");
+      obstacles.push(a);
+      //walls.push(a);
     }
     //-25, 25 ~ 25, -25?
 
@@ -348,28 +431,6 @@ const Setting = () => {
       await draw_players();
     });
 
-    // socket.on("requestPlayerData", (data) => {
-    //   socket.emit("getPlayerData", {
-    //     id: socket.id,
-    //     //x: user.sphere.position.x,
-    //     //z: user.sphere.position.z,
-    //     x: user.x,
-    //     z: user.z,
-    //   });
-    //   user.id = socket.id;
-    // });
-
-    // socket.on("sendPlayersData", (data) => {
-    //   players = data;
-    //   draw_players();
-    //   animate();
-    // });
-
-    // socket.on("playerMove", (data) => {
-    //   // const playerIndex = players.findIndex((i) => i.id === data.id);
-    //   // players.splice(playerIndex, 1, data);
-    //   move_players(data.id, data.x, data.z);
-    // });
     socket.on("playerMove", (data) => {
       const object = scene.getObjectByName(data.id);
       if (object) {
