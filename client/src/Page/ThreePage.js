@@ -1,9 +1,9 @@
 import React from "react";
 import Setting from "../components/threeJs/Setting";
-const ThreePage = () => {
+const ThreePage = ({ history }) => {
   return (
     <div>
-      <Setting />
+      <Setting history={history} />
     </div>
   );
 };

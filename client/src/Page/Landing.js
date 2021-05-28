@@ -1,10 +1,10 @@
 import React from "react";
 import LandingComponent from "../components/Landing/LandingComponent";
 
-const Landing = () => {
+const Landing = ({ history }) => {
   return (
     <div>
-      <LandingComponent />
+      <LandingComponent history={history} />
     </div>
   );
 };

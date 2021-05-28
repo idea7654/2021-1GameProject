@@ -1,12 +1,14 @@
-import React, { createRef, useEffect, useRef } from "react";
+import React, { createRef, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import io from "socket.io-client";
-const Setting = () => {
+import { withRouter } from "react-router-dom";
+const Setting = ({ history }) => {
   const ref = useRef();
   const socket = io.connect("http://localhost:5000");
   const canvasRef = useRef(null);
   let compassAngle = 0;
+  let alertFlag = true;
   useEffect(() => {
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(
@@ -40,12 +42,15 @@ const Setting = () => {
     // camera.rotation.set(0, Math.PI, 0);
     // const color = 0xffffff;
     // const intensity = 2;
+    //camera.position.set(0, 20, 0);
     let user = null;
     let walls = [];
     let players = [];
     let obstacles = [];
     let exit = null;
     // let collisionFlag = false;
+    let moveWall = null;
+    let otherPlayer = null;
 
     let key = {
       r_left: 0,
@@ -53,10 +58,14 @@ const Setting = () => {
       r_up: 0,
       r_down: 0,
     };
+    let timer = 0;
+    let timerTxt = null;
 
-    // const pointLight = new THREE.DirectionalLight(0xffffff, 3);
+    //const pointLight = new THREE.DirectionalLight(0xffffff, 3);
     //camera.add(pointLight);
     //scene.add(camera);
+    const light = new THREE.AmbientLight(0x404040); // soft white light
+    scene.add(light);
 
     function load() {
       user = new Player();
@@ -64,17 +73,56 @@ const Setting = () => {
       sendPlayerData();
       //const gridHelper = new THREE.GridHelper(50, 10);
       //scene.add(gridHelper);
-      const floorMaterial = new THREE.MeshPhongMaterial({
+
+      initFloor();
+      initMap();
+      initNavi();
+      initObstacle();
+      initHole();
+      initCooperation();
+      timer = Date.now() + 60000;
+
+      timerTxt = document.createElement("div");
+      timerTxt.style.position = "absolute";
+      timerTxt.style.left = "40%";
+      timerTxt.style.bottom = "90%";
+      timerTxt.style.color = "white";
+      document.body.appendChild(timerTxt);
+      animate();
+    }
+
+    function initHole() {
+      const material = new THREE.MeshPhongMaterial({
+        color: 0xffffff,
+      });
+      const geometry = new THREE.BoxGeometry(5, 5, 5);
+      const mesh = new THREE.Mesh(geometry, material);
+
+      mesh.position.set(15, -2.48, -15);
+      scene.add(mesh);
+    }
+
+    function initCooperation() {
+      const wallGeometry = new THREE.BoxGeometry(2, 1, 2);
+      const material = new THREE.MeshPhongMaterial({
         color: 0x333333,
+      });
+      const mesh = new THREE.Mesh(wallGeometry, material);
+      mesh.position.set(-3, -0.4, -8);
+
+      scene.add(mesh);
+    }
+
+    function initFloor() {
+      const textureLoader = new THREE.TextureLoader();
+      const floorMaterial = new THREE.MeshPhongMaterial({
+        //color: 0x333333,
+        map: textureLoader.load("../../public/floor.jpg"),
       });
       const floorGeometry = new THREE.BoxGeometry(51, 1, 51);
       const floor = new THREE.Mesh(floorGeometry, floorMaterial);
       floor.position.set(0, -0.5, 0);
       scene.add(floor);
-      initMap();
-      initNavi();
-      initObstacle();
-      animate();
     }
 
     function resizeRendererToDisplaySize(renderer) {
@@ -108,9 +156,66 @@ const Setting = () => {
         data.collision();
       });
       obstacles.forEach((data) => {
-        data.move();
         data.collision();
+        data.move();
       });
+
+      if (
+        user.sphere.position.x > 10 &&
+        user.sphere.position.x < 15 &&
+        user.sphere.position.z > 10 &&
+        user.sphere.position.z < 15
+      ) {
+        if (user.sphere.position.y < 5) {
+          user.sphere.position.y += 0.1;
+        }
+      } else {
+        if (user.sphere.position.y > 1) {
+          user.sphere.position.y -= 0.1;
+        }
+      } //공중뜨기
+
+      if (
+        user.sphere.position.x > 12.5 &&
+        user.sphere.position.x < 17.5 &&
+        user.sphere.position.z > -17.5 &&
+        user.sphere.position.z < -12.5
+      ) {
+        if (user.sphere.position.y > -5) {
+          user.sphere.position.y -= 1;
+        } else {
+          user.sphere.position.x = Math.random() * 40 - 20;
+          user.sphere.position.z = Math.random() * 40 - 20;
+          user.sphere.position.y = 20;
+        }
+      }
+      if (otherPlayer) {
+        const object = scene.getObjectByName(otherPlayer.id);
+        if (
+          user.sphere.position.x > -4 &&
+          user.sphere.position.x < -2 &&
+          user.sphere.position.z > -9 &&
+          user.sphere.position.z < -7
+        ) {
+          //발판밟으면 벽 움직이게
+          moveWall.direction = "-x";
+          moveWall.move();
+          moveWall.collision();
+        } else if (
+          object.position.x > -4 &&
+          object.position.x < -2 &&
+          object.position.z > -9 &&
+          object.position.z < -7
+        ) {
+          moveWall.direction = "-x";
+          moveWall.move();
+          moveWall.collision();
+        } else {
+          moveWall.direction = "+x";
+          moveWall.move();
+          moveWall.collision();
+        }
+      }
 
       renderer.render(scene, camera);
 
@@ -162,13 +267,22 @@ const Setting = () => {
             Math.PI +
           (user.sphere.rotation.y * 180) / Math.PI;
       }
+      //console.log(Date.now() - timer);
+      //setTime(Date.now() - timer);
+      //timerTxt = document.createElement("div");
+      timerTxt.innerHTML = `${(timer - Date.now()) / 1000} 초`;
+      if (timer - Date.now() < 0 && alertFlag) {
+        alert("게임 오버");
+        history.push("/");
+        alertFlag = false;
+      }
     }
 
     function makeWall(x, z, vector) {
       this.x = x;
       this.z = z;
       this.vector = vector;
-
+      this.mesh = null;
       this.collision = function () {
         const { position } = user.sphere;
         // const index = players.findIndex((i) => i.id === user.id);
@@ -203,10 +317,16 @@ const Setting = () => {
         }
       };
       const wallGeometry = new THREE.BoxGeometry(x, 10, z);
-      const material = new THREE.MeshPhongMaterial({ color: 0x000000 });
-      const mesh = new THREE.Mesh(wallGeometry, material);
-      mesh.position.set(vector.x, 5, vector.z);
-      scene.add(mesh);
+      const map = new THREE.TextureLoader().load(
+        "../../public/wallTexture.jpeg"
+      );
+      const material = new THREE.MeshPhongMaterial({
+        //color: 0x000000,
+        map: map,
+      });
+      this.mesh = new THREE.Mesh(wallGeometry, material);
+      this.mesh.position.set(vector.x, 5, vector.z);
+      scene.add(this.mesh);
     }
 
     function makeObstacle(x, y, z, vector, nickname) {
@@ -218,31 +338,44 @@ const Setting = () => {
       this.direction = "+x";
       this.collision = function () {
         const { position } = user.sphere;
+        //const { object } = this;
         if (
-          this.vector.x - this.x / 2 < position.x && //- user.radius
-          this.vector.x + this.x / 2 > position.x //+ user.radius
+          this.object.position.x - this.x / 2 < position.x && //- user.radius
+          this.object.position.x + this.x / 2 > position.x //+ user.radius
         ) {
-          if (this.vector.z > position.z + user.radius) {
-            if (this.vector.z - this.z / 2 < position.z + user.radius) {
-              position.z = this.vector.z - this.z / 2 - user.radius;
+          if (this.object.position.z > position.z + user.radius) {
+            if (
+              this.object.position.z - this.z / 2 <
+              position.z + user.radius
+            ) {
+              position.z = this.object.position.z - this.z / 2 - user.radius;
             } //오른쪽 벽
           } else {
-            if (position.z - user.radius < this.vector.z + this.z / 2) {
-              position.z = this.vector.z + this.z / 2 + user.radius;
+            if (
+              position.z - user.radius <
+              this.object.position.z + this.z / 2
+            ) {
+              position.z = this.object.position.z + this.z / 2 + user.radius;
             } //왼쪽 벽
           }
         }
         if (
-          this.vector.z + this.z / 2 > position.z && //+ user.radius
-          this.vector.z - this.z / 2 < position.z // - user.radius
+          this.object.position.z + this.z / 2 > position.z && //+ user.radius
+          this.object.position.z - this.z / 2 < position.z // - user.radius
         ) {
-          if (this.vector.x > position.x + user.radius) {
-            if (this.vector.x - this.x / 2 < position.x + user.radius) {
-              position.x = this.vector.x - this.x / 2 - user.radius;
+          if (this.object.position.x > position.x + user.radius) {
+            if (
+              this.object.position.x - this.x / 2 <
+              position.x + user.radius
+            ) {
+              position.x = this.object.position.x - this.x / 2 - user.radius;
             }
           } else {
-            if (this.vector.x + this.x / 2 > position.x - user.radius) {
-              position.x = this.vector.x + this.x / 2 + user.radius;
+            if (
+              this.object.position.x + this.x / 2 >
+              position.x - user.radius
+            ) {
+              position.x = this.object.position.x + this.x / 2 + user.radius;
             }
           }
         }
@@ -266,7 +399,8 @@ const Setting = () => {
         }
       };
       const wallGeometry = new THREE.BoxGeometry(x, y, z);
-      const material = new THREE.MeshPhongMaterial({ color: 0xffffff });
+      const map = new THREE.TextureLoader().load("../../public/obstacle.jpeg");
+      const material = new THREE.MeshPhongMaterial({ map: map });
       this.object = new THREE.Mesh(wallGeometry, material);
       this.object.position.set(vector.x, y / 2, vector.z);
       this.object.name = nickname;
@@ -281,7 +415,13 @@ const Setting = () => {
       const e = new makeWall(20, 1, { x: 10, z: 20 });
       const f = new makeWall(1, 40, { x: -5, z: 0 });
       const g = new makeWall(45, 1, { x: -2.5, z: 15 });
-      walls.push(a, b, c, d, e, f, g);
+      const h = new makeWall(1, 10, { x: 10, z: 15 });
+      const i = new makeWall(20, 1, { x: 0, z: -10 });
+      const j = new makeWall(20, 1, { x: 5, z: 0 });
+      const k = new makeWall(1, 20, { x: -15, z: -10 });
+      const l = new makeWall(10, 1, { x: -25, z: -10 });
+
+      walls.push(a, b, c, d, e, f, g, h, i, j, k);
       const geometry = new THREE.SphereGeometry(1, 32, 32);
       const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
       exit = new THREE.Mesh(geometry, material);
@@ -291,6 +431,7 @@ const Setting = () => {
 
     function initObstacle() {
       const a = new makeObstacle(5, 5, 5, { x: 10, z: 5 }, "first");
+      moveWall = new makeObstacle(10, 10, 1, { x: 25, z: -25 }, "moveWall");
       obstacles.push(a);
       //walls.push(a);
     }
@@ -344,6 +485,7 @@ const Setting = () => {
         socket.emit("playerMove", {
           id: socket.id,
           x: this.sphere.position.x,
+          y: this.sphere.position.y,
           z: this.sphere.position.z,
           rotation: this.sphere.rotation,
         });
@@ -354,6 +496,7 @@ const Setting = () => {
       const playerIndex = await players.findIndex((i) => i.id === socket.id);
       if (playerIndex != -1) {
         await players.splice(playerIndex, 1);
+        otherPlayer = await players[0];
       }
       await players.forEach((data, index) => {
         const geometry = new THREE.SphereGeometry(1, 32, 32);
@@ -404,6 +547,7 @@ const Setting = () => {
     function sendPlayerData() {
       socket.emit("sendPlayerData", {
         x: user.sphere.position.x,
+        y: user.sphere.position.y,
         z: user.sphere.position.z,
       });
     }
@@ -435,6 +579,7 @@ const Setting = () => {
       const object = scene.getObjectByName(data.id);
       if (object) {
         object.position.x = data.x;
+        object.position.y = data.y;
         object.position.z = data.z;
         object.rotation.y = data.rotation._y;
       }
@@ -479,4 +624,4 @@ const Setting = () => {
   );
 };
 
-export default Setting;
+export default withRouter(Setting);
