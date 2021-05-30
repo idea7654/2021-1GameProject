@@ -5,7 +5,7 @@ import io from "socket.io-client";
 const LandingComponent = ({ history }) => {
   const [InviteCode, setInviteCode] = useState(null);
   const [InputValue, setInputValue] = useState("");
-  const socket = io.connect("http://localhost:5000");
+  const socket = io.connect("https://922012a9fc5c.ngrok.io");
   function onGameStart() {
     history.push("/game");
   }

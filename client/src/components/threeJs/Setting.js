@@ -5,7 +5,7 @@ import io from "socket.io-client";
 import { withRouter } from "react-router-dom";
 const Setting = ({ history }) => {
   const ref = useRef();
-  const socket = io.connect("http://localhost:5000");
+  const socket = io.connect("https://922012a9fc5c.ngrok.io");
   const canvasRef = useRef(null);
   let compassAngle = 0;
   let alertFlag = true;
