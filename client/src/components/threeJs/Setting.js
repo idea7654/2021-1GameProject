@@ -5,7 +5,7 @@ import io from "socket.io-client";
 import { withRouter } from "react-router-dom";
 const Setting = ({ history }) => {
   const ref = useRef();
-  const socket = io.connect("https://922012a9fc5c.ngrok.io");
+  const socket = io.connect("https://4a943d5f8dad.ngrok.io");
   const canvasRef = useRef(null);
   let compassAngle = 0;
   let alertFlag = true;
@@ -214,6 +214,36 @@ const Setting = ({ history }) => {
           moveWall.direction = "+x";
           moveWall.move();
           moveWall.collision();
+        }
+      }
+
+      if (
+        user.sphere.position.x > exit.position.x - 0.5 &&
+        user.sphere.position.x < exit.position.x + 0.5 &&
+        user.sphere.position.z > exit.position.z - 0.5 &&
+        user.sphere.position.z < exit.position.z + 0.5
+      ) {
+        if (alertFlag) {
+          alert("게임 클리어");
+          history.push("/");
+          socket.emit("clear");
+          alertFlag = false;
+        }
+      }
+      if (otherPlayer) {
+        const object = scene.getObjectByName(otherPlayer.id);
+        if (
+          object.position.x > exit.position.x - 0.5 &&
+          object.position.x < exit.position.x + 0.5 &&
+          object.position.z > exit.position.z - 0.5 &&
+          object.position.z < exit.position.z + 0.5
+        ) {
+          if (alertFlag) {
+            alert("게임 클리어");
+            history.push("/");
+            socket.emit("clear");
+            alertFlag = false;
+          }
         }
       }
 
